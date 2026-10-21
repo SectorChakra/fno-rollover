@@ -20,7 +20,7 @@ import ast, ssl, urllib.request
 from pathlib import Path
 
 MIN_PEERS = 5
-SRC = ("https://raw.githubusercontent.com/abhijeetbishayee-drb/"
+SRC = ("https://raw.githubusercontent.com/sectorchakra/"
        "nifty-heatmap-core/main/nifty_heatmap_core/__init__.py")
 _CACHE = Path(__file__).resolve().parent / "data" / "heatmap_core_cache.py"
 

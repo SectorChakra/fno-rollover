@@ -58,7 +58,7 @@ So the screen is not reading split-adjusted prices as real moves.
 ## Sectors
 
 Reuses `FNO_SECTORS` from
-[`nifty-heatmap-core`](https://github.com/abhijeetbishayee-drb/nifty-heatmap-core),
+[`nifty-heatmap-core`](https://github.com/sectorchakra/nifty-heatmap-core),
 **fetched at runtime, never vendored** — a second copy would drift. Sectors with
 fewer than 5 F&O members get no sector baseline: an average over one member is
 that member, and the resulting 0.00 deviation looks like data.
@@ -66,7 +66,7 @@ that member, and the resulting 0.00 deviation looks like data.
 ## Parity with the heatmap board
 
 `parity_check.py` asserts, re-runnably, that sector plotting here matches
-[the heatmap board](https://github.com/abhijeetbishayee-drb/nifty-heatmap-web):
+[the heatmap board](https://github.com/sectorchakra/nifty-heatmap-web):
 labels, per-name membership, cash-only exclusion, and equal-weighted
 aggregation. It runs in CI before every capture, because the taxonomy is
 fetched at runtime and a change upstream would otherwise land here silently.
