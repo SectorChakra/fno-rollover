@@ -87,3 +87,13 @@ Two divergences are STRUCTURAL and declared in the test itself. An
 | `update.py` | weekly snapshot, idempotent |
 | `sectors.py` | taxonomy adapter |
 | `analyse.py` | the screen |
+
+## Channel watchlist (`channels.html`)
+
+A separate page listing the stocks whose recent daily candles sit inside a price channel — a best-fit line through
+the closes with upper/lower lines at the window's extreme high/low, extended one session ahead. **Strict**: 30 days,
+≥ 3 touches per line, width ≤ 8%, R² ≥ 0.6 for a sloped channel; **loose**: 20 days, ≥ 2 touches, width ≤ 10%.
+Universe: NSE rank 1-750 (the 44-EMA board's `universe.json`) plus every F&O stock. Data: NSE's cash-market
+bhavcopy (`channels/scan.py` → `data/channels.json`), refreshed by `.github/workflows/channels.yml` every weekday
+evening. **Information only** — trading the break of these channels was backtested (HR register items 93/93b) and
+lost after costs in all 24 versions.

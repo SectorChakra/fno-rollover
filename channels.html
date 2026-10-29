@@ -1,0 +1,198 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Channel Watchlist</title>
+<style>
+  :root{--bg:#0e0f12;--card:#16181d;--line:#24272e;--fg:#e6e8ec;--dim:#8a8f9a;--accent:#e8b84a;
+        --pos:#3ecf8e;--neg:#ef5f6b}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  header{padding:14px 20px 10px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;
+         background:rgba(14,15,18,.97);backdrop-filter:blur(8px)}
+  h1{margin:0;font-size:17px;color:var(--accent);letter-spacing:.3px}
+  .meta{color:var(--dim);font-size:12px;margin-top:4px}
+  .wrap{padding:14px 20px 60px}
+  .note{color:var(--dim);font-size:12px;margin:10px 0 0;max-width:820px}
+  .note b{color:var(--fg);font-weight:600}
+  .tiles{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+  .tile .k{color:var(--dim);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+  .tile .v{font-size:22px;line-height:1.15;margin-top:2px;font-variant-numeric:tabular-nums}
+  .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 10px}
+  .controls input,.controls select{background:#1b1e24;color:var(--fg);border:1px solid var(--line);
+    border-radius:7px;padding:6px 10px;font:inherit;font-size:12px}
+  .controls input[type=search]{min-width:160px}
+  .controls label{color:var(--dim);font-size:12px;display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+  .controls .shown{margin-left:auto;color:var(--dim);font-size:12px}
+  .sec{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .scroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;min-width:1100px;font-variant-numeric:tabular-nums}
+  th,td{padding:6px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid #1e2128}
+  th{color:var(--dim);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.4px;
+     position:sticky;top:0;background:#1b1e24;cursor:pointer;user-select:none}
+  th:hover{color:var(--fg)}
+  th[aria-sort]{color:var(--accent)}
+  th.l,td.l{text-align:left}
+  td.sym{font-weight:600}
+  tbody tr:hover{background:#1c1f26}
+  .pos{color:var(--pos)} .neg{color:var(--neg)} .dimc{color:var(--dim)}
+  .chip{display:inline-block;padding:0 6px;border-radius:4px;border:1px solid var(--line);font-size:11px}
+  .chip.strict{border-color:var(--accent);color:var(--accent)}
+  .bar{display:inline-flex;align-items:center;gap:6px}
+  .track{position:relative;width:70px;height:6px;border-radius:3px;background:#22252c}
+  .dot{position:absolute;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--fg)}
+  .dot.edge{background:var(--accent)}
+  .defs{color:var(--dim);font-size:12px;max-width:820px;margin:14px 0 0;padding-left:18px}
+  .defs li{margin:3px 0}
+  .defs b{color:var(--fg);font-weight:600}
+  .empty{color:var(--dim);padding:14px 16px;font-size:12px}
+  a{color:inherit;text-decoration:none} a:hover{color:var(--accent)}
+
+/* ── cross-board nav (same block as index.html) ── */
+.xnav{ display:flex; align-items:center; gap:4px; flex-wrap:wrap;
+       margin:10px 0 2px; font-family:inherit; }
+.xnav a{ font-size:12px; font-weight:600; letter-spacing:0.05em;
+         text-transform:uppercase; text-decoration:none; padding:5px 10px;
+         border-radius:5px; border:1px solid transparent;
+         color:var(--text-dim, var(--dim, #8a8f9a)); opacity:0.82; }
+.xnav a:hover{ color:var(--text, var(--fg, #e6e8ec)); opacity:1; }
+.xnav a.here{ background:var(--panel, var(--card, #16181d));
+              border-color:var(--border, var(--line, #24272e));
+              color:var(--text, var(--fg, #e6e8ec)); opacity:1; }
+.xnav a.away::after{ content:"\2197"; font-size:10px; margin-left:4px;
+                     opacity:0.6; }
+.xnav a:focus-visible{ outline:2px solid var(--accent, #4c8dff); outline-offset:2px; }
+.xnav-sep{ width:1px; align-self:stretch; margin:2px 6px; min-height:16px;
+           background:var(--border, var(--line, #24272e)); }
+@media (max-width:640px){ .xnav-sep{ display:none; } .wrap{padding:12px 16px 60px} header{padding:12px 16px 8px} }
+</style>
+
+<header>
+  <h1>Channel Watchlist</h1>
+  <nav class="xnav">
+    <a href="../nifty-heatmap-web/index.html" class="away">Nifty 50</a>
+    <a href="../nifty-heatmap-web/sectors.html" class="away">F&amp;O Sectors</a>
+    <a href="../nifty-heatmap-web/rrg.html" class="away">RRG</a>
+    <span class="xnav-sep" aria-hidden="true"></span>
+    <a href="./">Rollover</a>
+    <a href="channels.html" class="here" aria-current="page">Channels</a>
+    <a href="../nifty-pcr-tracker/" class="away">PCR</a>
+    <a href="../nifty-ema-board/" class="away">44 EMA</a>
+    <a href="../us-market-boards/" class="away">US</a>
+  </nav>
+  <div class="meta" id="meta">loading…</div>
+</header>
+
+<div class="wrap">
+  <p class="note"><b>For reading charts, not a trading signal.</b> Trading a break of these channels was backtested on 2022–26 data: loose and strict, same-day and 5-day, every slope and direction. All 24 versions lost money after costs.</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="k">In a channel</div><div class="v" id="t-all">—</div></div>
+    <div class="tile"><div class="k">Strict</div><div class="v" id="t-strict">—</div></div>
+    <div class="tile"><div class="k">Rising</div><div class="v pos" id="t-rising">—</div></div>
+    <div class="tile"><div class="k">Flat</div><div class="v" id="t-flat">—</div></div>
+    <div class="tile"><div class="k">Falling</div><div class="v neg" id="t-falling">—</div></div>
+  </div>
+
+  <div class="controls">
+    <input type="search" id="q" placeholder="Search stock" aria-label="Search stock">
+    <select id="tier" aria-label="Tier"><option value="">Strict and loose</option><option value="STRICT">Strict only</option><option value="LOOSE">Loose only</option></select>
+    <select id="slope" aria-label="Channel"><option value="">All channels</option><option value="RISING">Rising</option><option value="FLAT">Flat</option><option value="FALLING">Falling</option></select>
+    <label><input type="checkbox" id="fno"> F&amp;O only</label>
+    <span class="shown" id="shown"></span>
+  </div>
+
+  <div class="sec"><div class="scroll">
+    <table>
+      <thead><tr>
+        <th class="l" data-k="symbol">Stock</th>
+        <th class="l" data-k="tier">Tier</th>
+        <th class="l" data-k="slope_class">Channel</th>
+        <th data-k="slope_pct_day">Slope %/day</th>
+        <th data-k="close">Close</th>
+        <th data-k="next_upper">Next upper</th>
+        <th data-k="next_lower">Next lower</th>
+        <th class="l" data-k="position">Close in channel</th>
+        <th data-k="dist_upper_pct">To upper</th>
+        <th data-k="dist_lower_pct">To lower</th>
+        <th data-k="width_pct">Width</th>
+        <th data-k="touches_upper">Upper touches</th>
+        <th data-k="touches_lower">Lower touches</th>
+        <th data-k="r2">Fit R²</th>
+        <th data-k="days">Days</th>
+        <th class="l" data-k="fno">F&amp;O</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div></div>
+
+  <ul class="defs">
+    <li><b>Strict</b>: the last 30 completed days; at least 3 highs on the upper line and 3 lows on the lower line (within 10% of the channel's width); width no more than 8% of price; a sloped channel's closes must follow its line (R² at least 0.6).</li>
+    <li><b>Loose</b>: the last 20 days, at least 2 touches on each line, width no more than 10%. Listed only for stocks that fail the strict test.</li>
+    <li><b>The channel</b>: a best-fit line through the closes, with the upper and lower lines moved out to the window's highest high and lowest low. <b>Flat</b> means the line moves less than 0.10% of price a day.</li>
+    <li><b>Next upper / next lower</b>: both lines extended to the next session, known before it opens. <b>Close in channel</b> runs from the lower line (left) to the upper line (right); gold means within 15% of a line.</li>
+    <li>Universe: NSE's top 750 by market value plus every F&amp;O stock. Data: NSE's end-of-day bhavcopy, refreshed every weekday evening. Prices are as traded, so a split or bonus inside the window usually knocks that stock off the list until it rolls out.</li>
+  </ul>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fmtPx = new Intl.NumberFormat('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const pct = (v) => (v > 0 ? '+' : '') + v.toFixed(2) + '%';
+let ROWS = [], sortK = null, sortDir = 1;
+
+function cell(tr, text, cls) { const td = document.createElement('td'); if (cls) td.className = cls; td.textContent = text; tr.appendChild(td); return td; }
+
+function render() {
+  const q = $('q').value.trim().toUpperCase(), tier = $('tier').value, slope = $('slope').value, fno = $('fno').checked;
+  let rows = ROWS.filter(r => (!q || r.symbol.includes(q)) && (!tier || r.tier === tier) && (!slope || r.slope_class === slope) && (!fno || r.fno));
+  if (sortK) rows = rows.slice().sort((a, b) => {
+    const x = a[sortK], y = b[sortK];
+    return ((typeof x === 'number' && typeof y === 'number') ? x - y : String(x).localeCompare(String(y))) * sortDir;
+  });
+  const tb = $('rows'); tb.replaceChildren();
+  if (!rows.length) { const tr = document.createElement('tr'); const td = cell(tr, 'No stock matches these filters.', 'l empty'); td.colSpan = 16; tb.appendChild(tr); }
+  for (const r of rows) {
+    const tr = document.createElement('tr');
+    cell(tr, r.symbol, 'l sym');
+    const t = cell(tr, '', 'l'); const c = document.createElement('span'); c.className = 'chip' + (r.tier === 'STRICT' ? ' strict' : ''); c.textContent = r.tier === 'STRICT' ? 'Strict' : 'Loose'; t.appendChild(c);
+    cell(tr, r.slope_class === 'RISING' ? 'Rising' : r.slope_class === 'FALLING' ? 'Falling' : 'Flat', 'l ' + (r.slope_class === 'RISING' ? 'pos' : r.slope_class === 'FALLING' ? 'neg' : 'dimc'));
+    cell(tr, pct(r.slope_pct_day));
+    cell(tr, fmtPx.format(r.close));
+    cell(tr, fmtPx.format(r.next_upper));
+    cell(tr, fmtPx.format(r.next_lower));
+    const p = Math.max(0, Math.min(1, r.position));
+    const pc = cell(tr, '', 'l'); const w = document.createElement('span'); w.className = 'bar';
+    const tk = document.createElement('span'); tk.className = 'track'; const d = document.createElement('span');
+    d.className = 'dot' + (p >= 0.85 || p <= 0.15 ? ' edge' : ''); d.style.left = (p * 100) + '%'; tk.appendChild(d);
+    const lb = document.createElement('span'); lb.textContent = Math.round(r.position * 100) + '%'; w.append(tk, lb); pc.appendChild(w);
+    cell(tr, pct(r.dist_upper_pct));
+    cell(tr, pct(r.dist_lower_pct));
+    cell(tr, r.width_pct.toFixed(2) + '%');
+    cell(tr, r.touches_upper);
+    cell(tr, r.touches_lower);
+    cell(tr, r.r2.toFixed(2));
+    cell(tr, r.days);
+    cell(tr, r.fno ? 'Yes' : 'No', 'l dimc');
+    tb.appendChild(tr);
+  }
+  $('shown').textContent = rows.length + ' of ' + ROWS.length + ' shown';
+}
+
+['q', 'tier', 'slope', 'fno'].forEach(id => { $(id).addEventListener('input', render); $(id).addEventListener('change', render); });
+document.querySelectorAll('th[data-k]').forEach(th => th.addEventListener('click', () => {
+  const k = th.dataset.k; sortDir = sortK === k ? -sortDir : 1; sortK = k;
+  document.querySelectorAll('th[data-k]').forEach(h => h.removeAttribute('aria-sort'));
+  th.setAttribute('aria-sort', sortDir === 1 ? 'ascending' : 'descending'); render();
+}));
+
+fetch('data/channels.json', {cache: 'no-cache'}).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(d => {
+  ROWS = d.channels;
+  const n = (f) => ROWS.filter(f).length;
+  $('t-all').textContent = ROWS.length; $('t-strict').textContent = n(r => r.tier === 'STRICT');
+  $('t-rising').textContent = n(r => r.slope_class === 'RISING'); $('t-flat').textContent = n(r => r.slope_class === 'FLAT'); $('t-falling').textContent = n(r => r.slope_class === 'FALLING');
+  const asOf = new Date(d.as_of + 'T00:00:00').toLocaleDateString('en-IN', {day: 'numeric', month: 'short', year: 'numeric'});
+  $('meta').textContent = `As of the ${asOf} close · ${d.scanned} stocks scanned · ${ROWS.length} in a channel · updated ${d.generated.replace('T', ' ')} IST`;
+  render();
+}).catch(e => { $('meta').textContent = 'Could not load data/channels.json (' + e.message + ').'; });
+</script>

@@ -3,3 +3,6 @@ data/bhav/
 data/heatmap_core_cache.py
 __pycache__/
 *.pyc
+
+# Cash-market bhavcopy cache for channels/scan.py — regenerable from NSE.
+data/bhav_cm/

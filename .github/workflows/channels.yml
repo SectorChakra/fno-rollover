@@ -1,0 +1,50 @@
+name: channel watchlist
+
+on:
+  schedule:
+    # Every weekday, three times, for the same reason as daily.yml: GitHub drops
+    # scheduled runs under load with no notice and no retry. The scan is
+    # idempotent -- it rewrites data/channels.json for the latest completed
+    # session and commits only if the file changed -- so a repeat costs a few
+    # bhavcopy requests and nothing else.
+    #
+    # NSE's cash-market bhavcopy publishes ~17:30-18:30 IST. 19:30, 21:00 and
+    # 22:30 IST all sit after it and long before the next 09:15 open. If the
+    # day's file is not out yet the scan simply uses the previous session.
+    - cron: "0 14 * * 1-5"
+    - cron: "30 15 * * 1-5"
+    - cron: "0 17 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  # SHARED with daily.yml on purpose: both jobs push to main, and running them
+  # one after the other is simpler than resolving a push race.
+  group: daily-snapshot
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q certifi numpy
+      - name: Scan for price channels
+        run: python channels/scan.py
+      - name: Commit if the watchlist changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/channels.json
+          if git diff --cached --quiet; then
+            echo "no change — nothing to commit"
+          else
+            git commit -m "channel watchlist $(python -c 'import json;print(json.load(open("data/channels.json"))["as_of"])')"
+            git pull --rebase -q
+            git push
+          fi
