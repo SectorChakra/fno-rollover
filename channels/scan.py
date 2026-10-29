@@ -127,6 +127,12 @@ def main():
     doc = dict(as_of=days[-1][0].isoformat(), generated=datetime.now(IST).isoformat(timespec="minutes"),
                scanned=len(uni), fno_count=len(fno), too_little_history=short, source="NSE CM bhavcopy (nsearchives)",
                rules=dict(strict=STRICT, loose=LOOSE, flat_pct_day=FLAT), channels=out)
+    # Rewrite only when the watchlist itself changed: `generated` is new on every run, and three runs a night would
+    # otherwise commit three identical lists.
+    if OUT.exists():
+        old = json.loads(OUT.read_text()); old.pop("generated", None)
+        if old == {k: v for k, v in doc.items() if k != "generated"}:
+            print(f"{doc['as_of']}: unchanged ({len(out)} channels) — file left as is"); return
     OUT.write_text(json.dumps(doc, indent=1))
     print(f"{doc['as_of']}: {len(out)} channels ({sum(r['tier'] == 'STRICT' for r in out)} strict) "
           f"from {len(uni)} stocks; {short} with too little history")
