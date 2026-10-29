@@ -192,7 +192,7 @@ fetch('data/channels.json', {cache: 'no-cache'}).then(r => { if (!r.ok) throw ne
   $('t-all').textContent = ROWS.length; $('t-strict').textContent = n(r => r.tier === 'STRICT');
   $('t-rising').textContent = n(r => r.slope_class === 'RISING'); $('t-flat').textContent = n(r => r.slope_class === 'FLAT'); $('t-falling').textContent = n(r => r.slope_class === 'FALLING');
   const asOf = new Date(d.as_of + 'T00:00:00').toLocaleDateString('en-IN', {day: 'numeric', month: 'short', year: 'numeric'});
-  $('meta').textContent = `As of the ${asOf} close · ${d.scanned} stocks scanned · ${ROWS.length} in a channel · updated ${d.generated.replace('T', ' ')} IST`;
+  $('meta').textContent = `As of the ${asOf} close · ${d.scanned} stocks scanned · ${ROWS.length} in a channel · updated ${d.generated.slice(0, 16).replace('T', ' ')} IST`;
   render();
 }).catch(e => { $('meta').textContent = 'Could not load data/channels.json (' + e.message + ').'; });
 </script>
