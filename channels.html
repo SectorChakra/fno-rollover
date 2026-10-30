@@ -120,6 +120,7 @@
         <th data-k="touches_lower">Lower touches</th>
         <th data-k="r2">Fit R²</th>
         <th data-k="days">Days</th>
+        <th data-k="trades_avg" title="Average number of trades per session over the last 20 sessions (NSE bhavcopy)">Trades/day</th>
         <th class="l" data-k="fno">F&amp;O</th>
       </tr></thead>
       <tbody id="rows"></tbody>
@@ -131,6 +132,7 @@
     <li><b>Loose</b>: the last 20 days, at least 2 touches on each line, width no more than 10%. Listed only for stocks that fail the strict test.</li>
     <li><b>The channel</b>: a best-fit line through the closes, with the upper and lower lines moved out to the window's highest high and lowest low. <b>Flat</b> means the line moves less than 0.10% of price a day.</li>
     <li><b>Next upper / next lower</b>: both lines extended to the next session, known before it opens. <b>Close in channel</b> runs from the lower line (left) to the upper line (right); gold means within 15% of a line.</li>
+    <li><b>Trades/day</b>: the average number of trades per session over the last 20 sessions, from NSE's bhavcopy — how actively the stock trades, not the number of shares.</li>
     <li>Universe: NSE's top 750 by market value plus every F&amp;O stock. Data: NSE's end-of-day bhavcopy, refreshed every weekday evening. Prices are as traded, so a split or bonus inside the window usually knocks that stock off the list until it rolls out.</li>
   </ul>
 </div>
@@ -138,6 +140,7 @@
 <script>
 const $ = (id) => document.getElementById(id);
 const fmtPx = new Intl.NumberFormat('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const fmtInt = new Intl.NumberFormat('en-IN');
 const pct = (v) => (v > 0 ? '+' : '') + v.toFixed(2) + '%';
 let ROWS = [], sortK = null, sortDir = 1;
 
@@ -151,7 +154,7 @@ function render() {
     return ((typeof x === 'number' && typeof y === 'number') ? x - y : String(x).localeCompare(String(y))) * sortDir;
   });
   const tb = $('rows'); tb.replaceChildren();
-  if (!rows.length) { const tr = document.createElement('tr'); const td = cell(tr, 'No stock matches these filters.', 'l empty'); td.colSpan = 16; tb.appendChild(tr); }
+  if (!rows.length) { const tr = document.createElement('tr'); const td = cell(tr, 'No stock matches these filters.', 'l empty'); td.colSpan = 17; tb.appendChild(tr); }
   for (const r of rows) {
     const tr = document.createElement('tr');
     cell(tr, r.symbol, 'l sym');
@@ -173,6 +176,7 @@ function render() {
     cell(tr, r.touches_lower);
     cell(tr, r.r2.toFixed(2));
     cell(tr, r.days);
+    cell(tr, r.trades_avg == null ? '—' : fmtInt.format(r.trades_avg));
     cell(tr, r.fno ? 'Yes' : 'No', 'l dimc');
     tb.appendChild(tr);
   }

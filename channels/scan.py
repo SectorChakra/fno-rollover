@@ -17,6 +17,8 @@ A channel, fitted on the last N completed daily candles:
            width <= 8% of price, and a sloped channel's closes fit the line with R^2 >= 0.6        (item 93b)
   LOOSE    N 20, >= 2 touches per line, width <= 10%; only for stocks that fail STRICT              (item 93)
   slope    FLAT if the line moves less than 0.10% of price a day, else RISING / FALLING
+  trades   trades per day = average number of trades (bhavcopy TtlNbOfTxsExctd) over the last 20 sessions;
+           trades_last = the latest session's count
 Writes data/channels.json. Run: python channels/scan.py
 """
 from __future__ import annotations
@@ -42,14 +44,18 @@ IST = timezone(timedelta(hours=5, minutes=30))
 STRICT = dict(n=30, max_w=0.08, touch=3, r2_min=0.6)
 LOOSE = dict(n=20, max_w=0.10, touch=2, r2_min=None)
 FLAT = 0.10
+TRADES_N = 20          # trades per day = mean number of trades over the last 20 sessions
 SERIES = ("EQ", "BE", "BZ")      # BE/BZ = trade-for-trade; a stock can move between series, EQ wins on a tie
 
 
 def fetch(d: date):
-    """{symbol: (open, high, low, close)} for one session, or None (holiday / not published yet)."""
+    """{symbol: (open, high, low, close, trades)} for one session, or None (holiday / not published yet).
+    trades = TtlNbOfTxsExctd, the number of trades executed that session."""
     tag = d.strftime("%Y%m%d"); cached = CACHE / f"{tag}.json"
     if cached.exists():
-        return json.loads(cached.read_text()) or None
+        got = json.loads(cached.read_text())
+        if not got or len(next(iter(got.values()))) == 5:
+            return got or None                 # an older cache without the trade count is fetched again
     req = urllib.request.Request(URL.format(d=tag), headers={"User-Agent": UA, "Referer": "https://www.nseindia.com/", "Accept": "*/*"})
     try:
         raw = urllib.request.urlopen(req, timeout=30, context=CTX).read()
@@ -64,8 +70,9 @@ def fetch(d: date):
         if s not in rank: continue
         sym = r["TckrSymb"]
         if sym in out and rank[out[sym][4]] <= rank[s]: continue
-        out[sym] = (float(r["OpnPric"]), float(r["HghPric"]), float(r["LwPric"]), float(r["ClsPric"]), s)
-    out = {k: v[:4] for k, v in out.items()}
+        out[sym] = (float(r["OpnPric"]), float(r["HghPric"]), float(r["LwPric"]), float(r["ClsPric"]),
+                    int(float(r["TtlNbOfTxsExctd"] or 0)), s)
+    out = {k: v[:5] for k, v in out.items()}
     CACHE.mkdir(parents=True, exist_ok=True); cached.write_text(json.dumps(out))
     return out
 
@@ -122,7 +129,9 @@ def main():
             if len(bars) < rule["n"]: continue
             rec = fit(bars, **rule)
             if rec:
-                out.append(dict(symbol=sym, tier=tier, fno=sym in fno, since=days[-rule["n"]][0].isoformat(), **rec)); break
+                tr = [b[4] for b in bars[-TRADES_N:]]
+                out.append(dict(symbol=sym, tier=tier, fno=sym in fno, since=days[-rule["n"]][0].isoformat(), **rec,
+                                trades_avg=int(round(sum(tr) / len(tr))), trades_last=int(bars[-1][4]))); break
     out.sort(key=lambda r: (r["tier"] != "STRICT", r["slope_class"], r["symbol"]))
     doc = dict(as_of=days[-1][0].isoformat(), generated=datetime.now(IST).isoformat(timespec="minutes"),
                scanned=len(uni), fno_count=len(fno), too_little_history=short, source="NSE CM bhavcopy (nsearchives)",
