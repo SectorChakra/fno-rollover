@@ -37,7 +37,7 @@ import sectors                                                     # noqa: E402
 CACHE = ROOT / "data" / "bhav_cm"
 OUT = ROOT / "data" / "channels.json"
 URL = "https://nsearchives.nseindia.com/content/cm/BhavCopy_NSE_CM_0_0_0_{d}_F_0000.csv.zip"
-UNIVERSE_URL = "https://raw.githubusercontent.com/abhijeetbishayee-drb/nifty-ema-board/main/data/universe.json"
+UNIVERSE_URL = "https://raw.githubusercontent.com/sectorchakra/nifty-ema-board/main/data/universe.json"
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 CTX = ssl.create_default_context(cafile=certifi.where())   # this interpreter has no usable default CA bundle (see backfill.py)
 IST = timezone(timedelta(hours=5, minutes=30))
