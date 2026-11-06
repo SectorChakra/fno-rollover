@@ -78,8 +78,17 @@ def _extract(src):
     return type("T", (), out)
 
 
+# NSE symbol changes not yet reflected in nifty-heatmap-core (same ISIN, new ticker).
+# The heatmap list is curated upstream; map old -> current NSE symbol here so the F&O
+# data (bhavcopy) and NSE's own industry list line up. Remove an entry once upstream changes.
+NSE_RENAMES = {
+    "ICICIPRULI": "ICICILIFE",   # ICICI Prudential Life -> ICICI Life Insurance, from 2026-10-23 (INE726G01019)
+}
+
+
 def _norm(t):
-    return t[:-3] if t.endswith(".NS") else t
+    t = t[:-3] if t.endswith(".NS") else t
+    return NSE_RENAMES.get(t, t)
 
 
 def sector_map():

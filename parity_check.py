@@ -53,7 +53,7 @@ def heatmap_core():
 
 def main():
     hm = heatmap_core()
-    norm = lambda t: t[:-3] if t.endswith(".NS") else t
+    norm = ours._norm                      # strips .NS AND applies sectors.NSE_RENAMES (same view as ours)
     hm_sec = {norm(t): s for s, v in hm.FNO_SECTORS.items() for t in v}
     cash = {norm(t) for t in (getattr(hm, "CASH_ONLY", []) or [])}
     mine = ours.sector_map()
