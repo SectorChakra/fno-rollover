@@ -14,6 +14,10 @@ on:
     - cron: "0 14 * * 1-5"
     - cron: "30 15 * * 1-5"
     - cron: "0 17 * * 1-5"
+    # Weekend catch-up (2026-11-24): if every Friday-night run fails, the list would otherwise stay a session
+    # behind until Monday night -- i.e. through Monday's 15:45 channel-break alert. Saturday 10:00 IST and
+    # Sunday 10:00 IST re-scan; on a normal weekend they find nothing new and commit nothing.
+    - cron: "30 4 * * 6,0"
   workflow_dispatch:
 
 permissions:

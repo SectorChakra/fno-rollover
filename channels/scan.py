@@ -23,7 +23,7 @@ Writes data/channels.json. Run: python channels/scan.py
 """
 from __future__ import annotations
 
-import csv, io, json, ssl, sys, urllib.error, urllib.request, zipfile
+import csv, io, json, ssl, sys, time, urllib.error, urllib.request, zipfile
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -48,21 +48,38 @@ TRADES_N = 20          # trades per day = mean number of trades over the last 20
 SERIES = ("EQ", "BE", "BZ")      # BE/BZ = trade-for-trade; a stock can move between series, EQ wins on a tie
 
 
-def fetch(d: date):
+def fetch(d: date, newest: bool = False):
     """{symbol: (open, high, low, close, trades)} for one session, or None (holiday / not published yet).
-    trades = TtlNbOfTxsExctd, the number of trades executed that session."""
+    trades = TtlNbOfTxsExctd, the number of trades executed that session.
+
+    A 200 response that is not a zip (seen 2026-11-20 night: three runs died on BadZipFile, the list stayed a
+    session behind through Monday's 15:45 alert) is retried twice. If it is still not a zip and `d` is the newest
+    session being looked for, it is treated like a 404 -- not published yet, never cached, the next run retries.
+    For an older session it stays a hard failure: skipping it would silently shift the 30-session window."""
     tag = d.strftime("%Y%m%d"); cached = CACHE / f"{tag}.json"
     if cached.exists():
         got = json.loads(cached.read_text())
         if not got or len(next(iter(got.values()))) == 5:
             return got or None                 # an older cache without the trade count is fetched again
     req = urllib.request.Request(URL.format(d=tag), headers={"User-Agent": UA, "Referer": "https://www.nseindia.com/", "Accept": "*/*"})
-    try:
-        raw = urllib.request.urlopen(req, timeout=30, context=CTX).read()
-    except urllib.error.HTTPError as e:
-        if e.code == 404:
-            return None                # holiday, weekend, or today's file not out yet; never cached, so it is retried
-        raise                          # anything else is a real fault
+    for attempt in range(3):
+        try:
+            raw = urllib.request.urlopen(req, timeout=30, context=CTX).read()
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                return None            # holiday, weekend, or today's file not out yet; never cached, so it is retried
+            raise                      # anything else is a real fault
+        if raw[:2] == b"PK":
+            break
+        print(f"  {tag}: HTTP 200 but not a zip ({len(raw)} bytes, starts {raw[:40]!r}); attempt {attempt + 1}/3",
+              file=sys.stderr)
+        if attempt < 2:
+            time.sleep(20 * (attempt + 1))
+    else:
+        if newest:
+            print(f"  {tag}: still not a zip -- treated as not published yet; the next run retries", file=sys.stderr)
+            return None
+        raise SystemExit(f"{tag}: bhavcopy is not a zip after 3 attempts (older session; refusing to skip it)")
     z = zipfile.ZipFile(io.BytesIO(raw))
     out, rank = {}, {s: i for i, s in enumerate(SERIES)}
     for r in csv.DictReader(io.TextIOWrapper(z.open(z.namelist()[0]))):
@@ -82,7 +99,7 @@ def sessions(need: int):
     today, got, d = datetime.now(IST).date(), [], datetime.now(IST).date()
     while len(got) < need and (today - d).days < 120:
         if d.weekday() < 5:
-            b = fetch(d)
+            b = fetch(d, newest=not got)
             if b: got.append((d, b))
         d -= timedelta(days=1)
     if len(got) < need:
